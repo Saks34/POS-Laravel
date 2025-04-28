@@ -1,8 +1,10 @@
 FROM php:8.1-fpm
 
-RUN apt-get update && apt-get install -y \
-    git zip unzip libzip-dev libpng-dev libonig-dev libxml2-dev curl libcurl4-openssl-dev libssl-dev \
-    && docker-php-ext-install pdo_mysql zip mbstring exif pcntl bcmath gd curl openssl
+RUN apt-get update -o Acquire::Retries=3 && \
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+    git zip unzip libzip-dev libpng-dev libonig-dev libxml2-dev curl libcurl4-openssl-dev libssl-dev && \
+    docker-php-ext-install pdo_mysql zip mbstring exif pcntl bcmath gd curl openssl && \
+    apt-get clean && rm -rf /var/lib/apt/lists/*
 
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
