@@ -1,0 +1,28 @@
+# Use official PHP image with FPM and required extensions
+FROM php:8.1-fpm
+
+# Install system dependencies and PHP extensions
+RUN apt-get update && apt-get install -y \
+    git zip unzip libzip-dev libpng-dev libonig-dev libxml2-dev \
+    && docker-php-ext-install pdo_mysql zip mbstring exif pcntl bcmath gd
+
+# Install Composer globally
+COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
+
+# Set working directory
+WORKDIR /var/www
+
+# Copy application files
+COPY . .
+
+# Install PHP dependencies
+RUN composer install --no-dev --optimize-autoloader
+
+# Generate optimized config cache
+RUN php artisan config:cache
+
+# Expose port 9000 (PHP-FPM default)
+EXPOSE 9000
+
+# Start PHP-FPM server
+CMD ["php-fpm"]
