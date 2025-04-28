@@ -1,9 +1,8 @@
-# Use official PHP image with FPM and required extensions
 FROM php:8.1-fpm
 
-# Install system dependencies and PHP extensions
+# Install system dependencies and PHP extensions needed by Laravel and Composer
 RUN apt-get update && apt-get install -y \
-    git zip unzip libzip-dev libpng-dev libonig-dev libxml2-dev \
+    git zip unzip libzip-dev libpng-dev libonig-dev libxml2-dev curl \
     && docker-php-ext-install pdo_mysql zip mbstring exif pcntl bcmath gd
 
 # Install Composer globally
@@ -12,17 +11,18 @@ COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 # Set working directory
 WORKDIR /var/www
 
-# Copy application files
-COPY . .
+# Copy composer files first to leverage Docker cache
+COPY composer.json composer.lock ./
 
-# Install PHP dependencies
+# Install PHP dependencies before copying full source to speed builds and avoid reinstalling every time source changes
 RUN composer install --no-dev --optimize-autoloader
 
-# Generate optimized config cache
+# Copy the rest of the application code
+COPY . .
+
+# Generate config cache
 RUN php artisan config:cache
 
-# Expose port 9000 (PHP-FPM default)
 EXPOSE 9000
 
-# Start PHP-FPM server
 CMD ["php-fpm"]
