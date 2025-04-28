@@ -1,26 +1,19 @@
 FROM php:8.1-fpm
 
-# Install system dependencies and PHP extensions needed by Laravel and Composer
 RUN apt-get update && apt-get install -y \
-    git zip unzip libzip-dev libpng-dev libonig-dev libxml2-dev curl \
-    && docker-php-ext-install pdo_mysql zip mbstring exif pcntl bcmath gd
+    git zip unzip libzip-dev libpng-dev libonig-dev libxml2-dev curl libcurl4-openssl-dev libssl-dev \
+    && docker-php-ext-install pdo_mysql zip mbstring exif pcntl bcmath gd curl openssl
 
-# Install Composer globally
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
-# Set working directory
 WORKDIR /var/www
 
-# Copy composer files first to leverage Docker cache
 COPY composer.json composer.lock ./
 
-# Install PHP dependencies before copying full source to speed builds and avoid reinstalling every time source changes
-RUN composer install --no-dev --optimize-autoloader
+RUN composer install --no-dev --optimize-autoloader --no-interaction --verbose
 
-# Copy the rest of the application code
 COPY . .
 
-# Generate config cache
 RUN php artisan config:cache
 
 EXPOSE 9000
